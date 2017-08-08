@@ -1,0 +1,24 @@
+#!/bin/bash
+
+V=$1 # Applied Voltage +/- [mV] 
+t=$2 # Simulation time length [ns]
+cp mdpf/md_template.mdp mdf/md_${V}mV_${t}ns.mdp
+
+# Work out electric field
+Lz=$(tail -1 water_ions.gro | awk '{print $3}') # Box-length (Z-axis) [nm]
+Ez=$(echo "scale=3;(0.001* $V/$Lz )"|bc -l ) # Value of Electric field (Z-axis) [V/nm]
+
+# Work out numer of simulation steps
+dt=$(grep dt mdf/md_${V}mV_${t}ns.mdp | awk '{print $3}') # Time step [ps]
+N=$(echo "(1000*$t/$dt)"| bc) # Number of simulation steps 
+
+# Add worked out information into .mdp file 
+echo "nsteps          = $N " >> mdf/md_${V}mV_${t}ns.mdp
+echo "E-z                = 1 $Ez 1     ; turn on electric field in Z-axis" >> mdf/md_${V}mV_${t}ns.mdp
+
+# Prepare run file
+grompp_mpi -f mdf/md_${V}mV_${t}ns.mdp -c eqf/npt.gro -t eqf/npt.cpt -p topol.top -o mdf/md_${V}mV_${t}ns.tpr
+
+mpirun -np 16 mdrun_mpi -deffnm mdf/md_${V}mV_${t}ns
+
+

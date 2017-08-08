@@ -1,0 +1,76 @@
+#!/bin/bash
+
+module add apps/gromacs-5.0.6
+
+mkdir emf
+mkdir eqf
+mkdir mdf
+
+# Choose a water to set correct coordinate file
+if [[ ($1 == "spc") || ($1 == "tip3p") ]]; then
+        wgro=spc216.gro
+        echo "The selected water model is $1"
+        #echo "The coordinate file is $wgro"
+elif [ $1 == "tip4p" ]; then
+        wgro=tip4p.gro
+        echo "The selected water model is $1"
+        #echo "The coordinate file is $wgro"
+elif [ $1 == "tip5p" ]; then
+        wgro=tip5p.gro
+        echo "The selected water model is $1"
+        #echo "The coordinate file is $wgro"
+else
+        echo "Please, choose a valid water model: spc, tip3p, tip4p, tip5p"
+fi
+
+# Choose execution mode
+if [ $2 == "interact" ]; then
+	x=7.4; y=7.4; z=7.4
+        # Set ion species
+        cation=K
+        anion=CL
+        # KCl default concentration
+        ion_c=1
+
+	ff=$3 # Choice of force field
+
+        #echo "Yes! Now you will interact with the programme :D"
+
+	#Provide XYZ dimensions of Simulation box
+	#read -p "Set Lx: " x
+	#read -p "Set Ly: " y
+	#read -p "Set Ly: " z
+
+elif [ $2 == "file" ]; then
+        echo "OK! Please, provide a file with input parameters :) "
+
+elif [ $2 == "default" ]; then
+        #echo "Alright! You are a practical person then! ;) "
+	# These are default dimensions matching WzaY373C simulation
+	x=7.4; y=7.4; z=7.4
+	# Set ion species
+	cation=K
+	anion=CL
+	# KCl default concentration
+	ion_c=1
+fi
+
+echo $ff
+# S1. Generate and solvate simulation box  
+gmx_mpi solvate -cs ${wgro} -o water_${1}.gro -box ${x} ${y} ${z}
+
+# S2. Generate topology(.top) and coordinate file (conf.gro)
+# Pass force field selection (OPSL/AA)
+echo $ff | gmx_mpi pdb2gmx -f water_${1}.gro -water ${1} 
+
+# S3. Add ion species
+# i. create .tpr file
+mv conf.gro water_${1}.gro
+
+grompp_mpi -f mdpf/em.mdp -c water_${1}.gro -p topol.top -o ions.tpr
+
+# ii. add ions for a given conc.
+echo 2| genion_mpi  -s ions.tpr -o water_ions.gro -p topol.top -pname ${cation} -nname ${anion} -conc ${ion_c}
+
+rm \#*
+

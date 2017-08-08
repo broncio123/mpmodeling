@@ -1,0 +1,79 @@
+#!/bin/bash
+
+# Note: 21 Nov 2016
+#1. Need to make code for 'create_inp'. Make sure pathways are correct. (Done! 22-11-16)
+#2. Need to make code for 'G_stats.py'. Print out averages and std deviations.
+#	Select most relevant quantities we want to keep track of.
+#3. Test code to death! 
+
+#Note: 22 Nov 2016
+#1. Need to rename frame files to feature time-points[ps]
+#2. Re-think of how many essays we need to get the std deviation on HOLE calculations
+# Keep in in mind that the more essays, the longer the analysis will take.  
+
+function create_inp {
+# This function creates ai simple HOLE input file
+fname=$1
+echo "!HOLE input file
+coord ${fname}.pdb
+radius ../hole2/rad/simple.rad
+ignore hoh
+capsule
+sphpdb ${fname}.sph
+endrad 15." > ${fname}.inp
+}
+
+function avg_std {
+	X=$@ # Data array
+	a=$(for x in $X ; do echo $x; done | awk '{sum1+=$1} {sum2+=$1^2} END{print sum1/NR, (sum2/NR - sum1^2/NR^2)^0.5}')
+	echo $a
+}
+
+function G_stats {
+#This function determines the average and std dev. of conductance values and dimensions
+#over a all HOLE trials for a particular frame 
+frame=$1 # PDB file name
+
+# Extract data
+# Channel length [Angstroms]
+Length=$(grep '"Atomic" length of channel:' ${frame%.pdb}_1trial.txt | awk '{print $5}')
+# Channel Minimum Raiuds [Angstroms] 
+Rmin=$(grep TAG ${frame%.pdb}_*trial.txt | awk '{print $5}')
+# Non-corrected Integrated Conductance (Bulk) [pS]
+Gmacro=$(grep TAG ${frame%.pdb}_*trial.txt | awk '{print $7}')
+# Corrected Integrated Conductance by Rmin (8 system)  [pS]
+Gpred_Rmin=$(grep TAG ${frame%.pdb}_*trial.txt | awk '{print $10 }')
+# Corrected Integrated Conductance by Lenght  [pS] 
+Gpred_Lenght=$(grep TAG ${frame%.pdb}_*trial.txt | awk '{print $11 }')
+# Corrected Integrated Conductance by Average Electric Potential  [pS]
+Gpred_AvEPot=$(grep TAG ${frame%.pdb}_*trial.txt | awk '{print $12}')
+
+# Compute average and standard deviation values
+x2=$(avg_std $Rmin)
+x3=$(avg_std $Gmacro)
+x4=$(avg_std $Gpred_Rmin)
+x5=$(avg_std $Gpred_Lenght)
+x6=$(avg_std $Gpred_AvEPot)
+printf "%s \t %3f \t %s \t %s \t %s \t %s \t %s\n" $Length 0 "$x2" "$x3" "$x4" "$x5" "$x6"
+} 
+
+fname=$1 # Generic file name (without extension)
+dt=$2    # Time-space between frames [ps]
+mkdir ${fname}_frames
+# Split trajectory into seprate frame fles(PDB format)
+# Select only Protein coordinates 
+echo "Protein" | gmx trjconv -f ${fname}.xtc -s ${fname}.tpr -dt $dt -sep -o ${fname}_frames/frame.pdb 
+cd ${fname}_frames
+for ffile in `ls frame*pdb`; do 
+	# Create a HOLE input file per frame file
+	create_inp ${ffile%.pdb}
+	for n in `seq 1 1`; do  
+		# Run HOLE for each frame file (5 independent trials)
+		../hole2/exe/hole < ${ffile%.pdb}.inp > ${ffile%.pdb}_${n}trial.txt
+	done
+	output=$(G_stats ${ffile})
+	echo "$output" >> ../HOLE-Summary.dat
+	rm ${ffile%.pdb}*	
+done
+cd ../
+rm -r ${fname}_frames
