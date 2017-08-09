@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import concurrent.futures
-import sys,itertools, subprocess, isambard_dev
+import sys,itertools, subprocess, isambard_dev, time, os
 import numpy as np
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -9,10 +9,12 @@ import analyse_protein_properties
 
 # SQLAlchemy stuff
 dbfile = sys.argv[1] # Database filename
-ncores = int(sys.argv[2])
-protein_set = sys.argv[3]
+ncores = int(sys.argv[2]) # Number of cores to use
+protein_set = sys.argv[3] # Type of protein structure 
 if protein_set == 'whole':
-	crystal_structure_pdb = sys.argv[4]
+	crystal_structure_pdb = sys.argv[4] # PDB of crystal structure for alignment
+else:
+	crystal_structure_pdb = "None"
 
 engine = create_engine('sqlite:///'+dbfile)
 Base.metadata.bind = engine
@@ -23,27 +25,53 @@ npeptides = 8
 sequence = 'VPTITGVHDLTETVRYIKT'
 nresidues = len(sequence)
 
-mean_radius = 15.3063556447
-mean_pitch  = 155.121966666
-mean_phica  = -65.0829383279
+# Mean Crick parameters from  cWza V358-T376 PDB (Crystal structure)
+mean_radius = 15.3063556447 # [Angstroms]
+mean_pitch  = 155.121966666 # [Angstroms]
+mean_phica  = -65.0829383279 # [deg]
 
-radius_length = 6 
-pitch_length = 200
-phica_length = 5 
+# Grid length per axis
+radius_length = 6  # [Angstroms]
+pitch_length = 200  # [Angstroms]
+phica_length = 5 # [deg]
 
-radius_step = 0.5 #6#0.5
-pitch_step = 10  #100#10 
-phica_step = 0.5 #4#0.5
+# Grid resolution
+radius_step = 0.25 # [Angstroms]; Test value: 5
+pitch_step = 5 # [Angstroms]; Test value: 100
+phica_step = 0.5 # [deg]; Test value: 4
 
+# Define grid axes in Crick space
 radius_axis = np.arange(mean_radius - radius_length, mean_radius + radius_length, radius_step)
-pitch_axis = np.arange(100,200,1)
+pitch_axis = np.arange(10,210,5)
 phica_axis = np.arange(mean_phica - phica_length, mean_phica + phica_length, phica_step)
 param_triple = list(itertools.product(radius_axis,pitch_axis,phica_axis))
 
+# Useful output messages
+print("Test date: "+str(time.strftime("%d/%m/%Y"))+'; time:'+str(time.strftime("%H:%M:%S")))
+print("Volume in Crick parameter space:")
+print("Radius: [%f, %f] [Angstroms]"%(radius_axis.min(), radius_axis.max()))
+print("Pitch length: [%f, %f] [Angstroms]"%(pitch_axis.min(), pitch_axis.max()))
+print("Interface Angle (PhiCa): [%f, %f] [deg]"%(phica_axis.min(), phica_axis.max()))
+
+print("Grid resolution:")
+print("Radius, axis: %f [Angstroms]"%radius_step)
+print("Pitch length, axis: %f [Angstroms]"%pitch_step)
+print("Interface Angle (PhiCa), axis: %f [deg]"%phica_step)
+
+print("%d models will be sampled"%len(param_triple))
+
+print("Crystal structure for alignment: %s"%crystal_structure_pdb)
+print("Oligomer: %d helices"%npeptides)
+print("Output database: %s"%dbfile)
+ 
+# Generate simplified id per model identity
 Nrad = range(len(radius_axis))
 Npitch = range(len(pitch_axis))
 Nphica = range(len(phica_axis))
 ident_triple = list(itertools.product(Nrad,Npitch,Nphica))
+
+tmp_outfolder = 'mymodels_'+str(time.strftime("%d-%m-%Y"))+'_'+str(time.strftime("%H:%M:%S"))
+subprocess.call(['mkdir',tmp_outfolder])
 
 def process_model(n):
 	# MODEL GENERATION
@@ -64,12 +92,12 @@ def process_model(n):
 	model_ampal.pack_new_sequences((sequence)*npeptides)
 		
 	# 1.5 Save model coordinates in PDB
-	model_pdb = 'mymodels/'+'model'+'_'+model_tag+'.pdb'
+	model_pdb = tmp_outfolder+'/'+'model'+'_'+model_tag+'.pdb'
 	with open(model_pdb, 'w') as x:
 		x.write(model_ampal.pdb)
 	
 	if protein_set == 'whole':
-		whole_model_pdb = 'mymodels/'+'whole_model'+'_'+model_tag+'.pdb'
+		whole_model_pdb = tmp_outfolder+'/'+'whole_model'+'_'+model_tag+'.pdb'
 		model_ampal = analyse_protein_properties.pymol_align_protein2model(crystal_structure_pdb,model_pdb,whole_model_pdb)	
 		old_model_pdb = model_pdb
 		model_pdb = whole_model_pdb	
