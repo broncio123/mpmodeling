@@ -60,7 +60,7 @@ class RosettaMP_Energies(Base):
 	__tablename__ = 'rosettamp_energies'
 	id = Column(Integer, primary_key=True)
 	total_score = Column(Float)
-	rmsd = Column(Float)
+	#rmsd = Column(Float)
 	I_sc = Column(Float) 
 	# Foreign key 
 	pdb_id = Column(Integer, ForeignKey('pdb.id'))

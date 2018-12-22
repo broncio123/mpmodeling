@@ -11,9 +11,10 @@ def extract_rosettad(scfile, pdbname):
 	lline = matches[-1] # last line
 	data = lline.split()
 	total_score = float(data[1])
-	rmsd = float(data[2])
-	I_sc = float(data[3])
-	return total_score, rmsd, I_sc
+	#rmsd = float(data[2])
+	I_sc = float(data[2])
+	#return total_score, rmsd, I_sc
+	return total_score, I_sc
 
 
 if __name__ == '__main__':
@@ -24,8 +25,9 @@ if __name__ == '__main__':
 	infile = open(pdbnamef,'r')
 	pdbnames = [l.rstrip() for l in infile.readlines()]
 	for name in pdbnames:
-		total_score, rmsd, I_sc = extract_rosettad(scfile,name)
+		#total_score, rmsd, I_sc = extract_rosettad(scfile,name)
+		total_score, I_sc = extract_rosettad(scfile,name)
 		print("PDB analysed:",name)
 		print("TOTAL ROSETTA SCORES [REU ~ kJ/mol]:",total_score)
-		print("RMSD TO NAITVE [Angstroms]:",rmsd)
+		#print("RMSD TO NAITVE [Angstroms]:",rmsd)
 		print("INTERFACIAL SCORE [REU ~ kJ/mol]:",I_sc,"\n")

@@ -7,7 +7,7 @@ from sqlalchemy.orm import sessionmaker
 from setup_db import Json, Pdb, SuperHelix_Parameters, Conformation, BUDE_Energies, RosettaMP_Energies, Interhelix_Interactions, HOLE_Output, SASA_Estimates, Base
 import analyse_protein_properties
 from extract_rosettad import extract_rosettad
-from get_SHelixParams import get_SHparams
+from get_SHelixParams_Corrected import get_SHparams
 from get_alldihedrals import get_alldihedrals
 
 dbfile	= sys.argv[1] # Database filename
@@ -65,9 +65,11 @@ def process_model(n):
 	session.add(bude_energies)
 
 	# RosettaMP energetic components for helix-helix interactions [REU ~ kcal/mol]
-	total_score, rmsd, I_sc = extract_rosettad(scfile, pdbnames[n])
+	#total_score, rmsd, I_sc = extract_rosettad(scfile, pdbnames[n])
+	total_score, I_sc = extract_rosettad(scfile, pdbnames[n])
 	
-	rosetta_energies = RosettaMP_Energies(total_score = total_score, I_sc = I_sc, rmsd = rmsd, pdb = model)
+	#rosetta_energies = RosettaMP_Energies(total_score = total_score, I_sc = I_sc, rmsd = rmsd, pdb = model)
+	rosetta_energies = RosettaMP_Energies(total_score = total_score, I_sc = I_sc, pdb = model)
 	session.add(rosetta_energies)
 
 	## Number Salt bridges, Hydrogen bonds, and Knobs-Into-Holes interactions between helices 
