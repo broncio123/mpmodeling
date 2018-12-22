@@ -1,0 +1,13 @@
+
+# Convert .rgb to png
+for f in `ls *.rgb `; do convert $f ${f%.rgb}.png; done
+
+# Make GIF with list of PNGs
+X=$(seq -f "%04g" 0 20);
+frames=();
+for x in $X; do frames+=(animate.${x}.png); done
+
+# Make animated GIF 
+output=bb+sc-docking.gif
+convert -delay 20 -loop 0 ${frames[@]} $output
+

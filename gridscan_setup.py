@@ -4,7 +4,6 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy import create_engine
 
-N_helices = 8
 Base = declarative_base()
 
 class Pdb(Base):
