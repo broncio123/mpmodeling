@@ -1,0 +1,15 @@
+#!/bin/bash -login 
+#SBATCH -p cpu 
+#SBATCH --ntasks-per-node=16 
+#SBATCH -N 1 
+#SBATCH --exclusive 
+#SBATCH -t 1-12:30 
+#SBATCH -A S2.1 
+#SBATCH -o complex/jobf/md_100ns_slurm.log 
+#SBATCH -e complex/jobf/md_100ns_slurm.error 
+
+# Load GROMACS module 
+module load apps/gromacs-5.0.6 
+
+mpiexec.hydra -psm -bootstrap slurm gmx_mpi mdrun -s complex/mdf/md_100ns.tpr -deffnm complex/mdf/md_100ns
+

@@ -1,0 +1,15 @@
+#!/bin/bash -login
+#SBATCH --partition=cpu
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=28
+#SBATCH --cpus-per-task=1
+#SBATCH --time=4-00:00:0
+#SBATCH -o md_100ns_slurm.log
+#SBATCH -e md_100ns_slurm.error
+
+# Load GROMACS module
+module add apps/gromacs/5.1.4-mpi-intel
+export I_MPI_PMI_LIBRARY=/usr/lib64/libpmi.so
+
+srun gmx_mpi mdrun -s md_100ns.tpr -deffnm md_100ns
+
