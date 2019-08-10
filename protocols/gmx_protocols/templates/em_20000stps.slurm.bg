@@ -5,10 +5,10 @@
 #SBATCH --exclusive
 #SBATCH -t 1-12:30
 #SBATCH -A S2.1
-#SBATCH -o jobf/em_20000stps_slurm.log
-#SBATCH -e jobf/error_em_20000stps_slurm.log
+#SBATCH -o complex/jobf/em_20000stps_slurm.log
+#SBATCH -e complex/jobf/error_em_20000stps_slurm.log
 
 module load apps/gromacs-5.0.6
 
-mpiexec.hydra -psm -bootstrap slurm gmx_mpi mdrun -s em/em_20000stps.tpr -deffnm em/em_20000stps
+mpiexec.hydra -psm -bootstrap slurm gmx_mpi mdrun -s complex/mdf/em_20000stps.tpr -deffnm complex/mdf/em_20000stps
 
