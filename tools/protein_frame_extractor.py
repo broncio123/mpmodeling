@@ -45,8 +45,8 @@ proc.wait()
 # Extract frames
 outdir = filename
 t_init = 0 # (ps)
-t_final = 10000 # (ps)
-dt = 1000 # Precision (ps) 
+t_final = 100000 # (ps)
+dt = 100 # Precision (ps) 
 cmd = [
         'gmx_mpi','trjconv',
         '-f',filename+'.xtc',
