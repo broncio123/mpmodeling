@@ -6,7 +6,8 @@ def hole(inputfile):
 	# Compute HOLE conductance estimates and pore lumen dimensions/features
 	# NOTE: Had to wrap HOLE code in bash code 'run_hole' to automatically generate HOLE input file
 	fname = os.path.splitext(inputfile)[0]
-	subprocess.check_output(["run_hole", inputfile])
+	proc = subprocess.Popen(["run_hole", inputfile])
+	proc.wait()
 	hole_lines = open(fname+'.hole_dat','r').readlines()		
 	# Filter HOLE output file
 	for l in hole_lines:
