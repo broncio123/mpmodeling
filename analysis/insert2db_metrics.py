@@ -27,7 +27,7 @@ def get_tags(model_pdb):
 def get_Rg_components(model_pdb):
     try:
         u = mda.Universe(model_pdb)
-        protein = u.select_atoms("protein")
+        protein = u.select_atoms('protein and backbone')
         protein_mass = numpy.sum(protein.masses)
         protein_inertia = protein.moment_of_inertia() # tensor of inertia
         f = lambda x : numpy.sqrt(x/float(protein_mass))
@@ -110,7 +110,8 @@ if __name__ == '__main__':
     # Extract info from dictionary
     with open(param_json, 'r') as fp:
         param_list = json.load(fp)
-
+    fp.close()
+    
     # Create engine and bind it to current session
     engine = create_engine('sqlite:///'+dbfile)
     Base.metadata.bind = engine
